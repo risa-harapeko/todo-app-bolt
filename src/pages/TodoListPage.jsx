@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchTodos, updateTodo } from '@/api/todos';
 import TodoDateGroup from '@/components/TodoDateGroup';
+import ProgressSummary from '@/components/ProgressSummary';
 import { groupTodosByDue } from '@/utils/todoDates';
 
 export default function TodoListPage() {
@@ -51,6 +52,8 @@ export default function TodoListPage() {
         <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">やることノート</h1>
         <p className="mt-3 text-sm text-ink-muted">日々のタスクを、日付ごとに整理します</p>
       </header>
+
+      {status === 'ready' && todos.length > 0 && <ProgressSummary todos={todos} />}
 
       {actionError && (
         <p role="alert" className="mt-8 rounded-2xl border border-clay/30 bg-clay-soft px-4 py-3 text-sm text-clay-deep">
