@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { List, Calendar } from 'lucide-react';
 import { fetchTodos, updateTodo } from '@/api/todos';
 import TodoDateGroup from '@/components/TodoDateGroup';
+import TodoCalendar from '@/components/TodoCalendar';
 import ProgressSummary from '@/components/ProgressSummary';
 import { groupTodosByDue } from '@/utils/todoDates';
+import { useLocalStorage } from '@/utils/hooks';
 
 export default function TodoListPage() {
   const [todos, setTodos] = useState([]);
@@ -11,6 +14,7 @@ export default function TodoListPage() {
   const [loadError, setLoadError] = useState('');
   const [actionError, setActionError] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const [view, setView] = useLocalStorage('tasuku.view', 'list');
 
   const loadTodos = useCallback(async () => {
     setStatus('loading');
@@ -53,7 +57,38 @@ export default function TodoListPage() {
         <p className="mt-3 text-sm text-ink-muted">日々のタスクを、日付ごとに整理します</p>
       </header>
 
-      {status === 'ready' && todos.length > 0 && <ProgressSummary todos={todos} />}
+      {status === 'ready' && todos.length > 0 && (
+        <>
+          <ProgressSummary todos={todos} />
+
+          <div className="mt-8 flex items-center justify-center">
+            <div className="inline-flex rounded-full border border-line bg-surface p-1">
+              <button
+                type="button"
+                onClick={() => setView('list')}
+                aria-pressed={view === 'list'}
+                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  view === 'list' ? 'bg-accent text-white shadow-sm' : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                <List size={15} aria-hidden="true" />
+                リスト
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('calendar')}
+                aria-pressed={view === 'calendar'}
+                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  view === 'calendar' ? 'bg-accent text-white shadow-sm' : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                <Calendar size={15} aria-hidden="true" />
+                カレンダー
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {actionError && (
         <p role="alert" className="mt-8 rounded-2xl border border-clay/30 bg-clay-soft px-4 py-3 text-sm text-clay-deep">
@@ -85,7 +120,7 @@ export default function TodoListPage() {
         </div>
       )}
 
-      {status === 'ready' && groups.length > 0 && (
+      {status === 'ready' && groups.length > 0 && view === 'list' && (
         <div className="mt-12 divide-y divide-line">
           {groups.map((group) => (
             <TodoDateGroup
@@ -96,6 +131,10 @@ export default function TodoListPage() {
             />
           ))}
         </div>
+      )}
+
+      {status === 'ready' && todos.length > 0 && view === 'calendar' && (
+        <TodoCalendar todos={todos} />
       )}
     </main>
   );

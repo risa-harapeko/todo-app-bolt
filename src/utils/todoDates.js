@@ -1,4 +1,5 @@
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+export { WEEKDAYS };
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TOKYO_DATE = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Tokyo',
@@ -7,9 +8,82 @@ const TOKYO_DATE = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 });
 
-function parseDate(ymd) {
+export function parseDate(ymd) {
   const [year, month, day] = ymd.split('-').map(Number);
   return { year, month, day };
+}
+
+function pad(n) {
+  return String(n).padStart(2, '0');
+}
+
+export function partsToYmd(year, month, day) {
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+export function todayYMD(now = new Date()) {
+  return TOKYO_DATE.format(now);
+}
+
+export function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+export function addDays(ymd, n) {
+  let { year, month, day } = parseDate(ymd);
+  day += n;
+  while (day > daysInMonth(year, month)) {
+    day -= daysInMonth(year, month);
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+  while (day < 1) {
+    month -= 1;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+    day += daysInMonth(year, month);
+  }
+  return partsToYmd(year, month, day);
+}
+
+export function weekdayOf(ymd) {
+  const { year, month, day } = parseDate(ymd);
+  return new Date(year, month - 1, day).getDay();
+}
+
+export function firstOfMonth(ymd) {
+  const { year, month } = parseDate(ymd);
+  return partsToYmd(year, month, 1);
+}
+
+export function shiftMonth(ymd, delta) {
+  const { year, month } = parseDate(ymd);
+  let m = month + delta;
+  let y = year;
+  while (m > 12) {
+    m -= 12;
+    y += 1;
+  }
+  while (m < 1) {
+    m += 12;
+    y -= 1;
+  }
+  return partsToYmd(y, m, 1);
+}
+
+export function monthLabel(ymd) {
+  const { year, month } = parseDate(ymd);
+  return `${year}年${month}月`;
+}
+
+export function dayLabel(ymd) {
+  const { year, month, day } = parseDate(ymd);
+  return `${year}年${month}月${day}日`;
 }
 
 function dayNumber(ymd) {
