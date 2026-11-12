@@ -80,7 +80,16 @@ export default function TodoListPage() {
 
   function handleDragStart(event) {
     const todo = event.active.data.current?.todo;
+    console.log('[DnD] onDragStart', { activeId: event.active.id, todoId: todo?.id, currentDueDate: todo?.dueDate });
     if (todo) setActiveTodo(todo);
+  }
+
+  function handleDragOver(event) {
+    const { active, over } = event;
+    const activeId = active?.id;
+    const overId = over?.id;
+    const overDueDate = over?.data.current?.dueDate;
+    console.log('[DnD] onDragOver', { activeId, overId, overDueDate });
   }
 
   async function handleDragEnd(event) {
@@ -88,10 +97,20 @@ export default function TodoListPage() {
     setActiveTodo(null);
     markDragEnded();
 
-    if (!over) return;
+    const activeId = active?.id;
+    const overId = over?.id;
     const todo = active.data.current?.todo;
+    const targetDueDate = over?.data.current?.dueDate;
+    console.log('[DnD] onDragEnd', {
+      activeId,
+      overId,
+      todoId: todo?.id,
+      currentDueDate: todo?.dueDate,
+      targetDueDate,
+    });
+
+    if (!over) return;
     if (!todo) return;
-    const targetDueDate = over.data.current?.dueDate;
     if (targetDueDate === undefined) return;
     if (targetDueDate === (todo.dueDate || '')) return;
 
@@ -117,6 +136,7 @@ export default function TodoListPage() {
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
