@@ -1,3 +1,4 @@
+import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { getDueUrgency, formatDateParts, getGroupStatus } from '@/utils/todoDates';
 import TodoRow from '@/components/TodoRow';
 
@@ -21,6 +22,19 @@ export default function TodoDateGroup({ group, busyId, onToggle }) {
   const status = getGroupStatus(group.dueDate);
   const dateParts = group.dueDate ? formatDateParts(group.dueDate) : null;
 
+  const { active } = useDndContext();
+  const isDragging = active != null;
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop:${group.dueDate || 'nodue'}`,
+    data: { dueDate: group.dueDate || '' },
+  });
+
+  const dropHighlight = isDragging
+    ? isOver
+      ? 'bg-accent-soft/50 rounded-2xl ring-2 ring-accent'
+      : 'bg-surface-muted/25 rounded-2xl'
+    : '';
+
   return (
     <section className="animate-fade-up grid gap-4 py-10 first:pt-0 sm:grid-cols-[10rem_1px_1fr] sm:gap-0">
       <header className="sm:pr-6">
@@ -39,7 +53,10 @@ export default function TodoDateGroup({ group, busyId, onToggle }) {
 
       <div aria-hidden="true" className={`hidden self-stretch sm:block ${lineTone[status.tone]}`} />
 
-      <ul className="flex flex-col gap-3 sm:pl-6">
+      <ul
+        ref={setNodeRef}
+        className={`flex flex-col gap-3 p-1 transition-colors duration-200 sm:pl-6 ${dropHighlight}`}
+      >
         {group.todos.map((todo) => (
           <TodoRow
             key={todo.id}

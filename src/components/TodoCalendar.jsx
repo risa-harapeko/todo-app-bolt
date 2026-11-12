@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import {
   WEEKDAYS,
   parseDate,
@@ -14,6 +15,7 @@ import {
   getDaysLeft,
 } from '@/utils/todoDates';
 import { useMediaQuery } from '@/utils/hooks';
+import { consumeDragJustEnded } from '@/utils/dragState';
 
 const MAX_VISIBLE = 3;
 
@@ -134,35 +136,84 @@ function buildWeekCells(cursor, today, todosByDate) {
   return cells;
 }
 
-function todoStateClass(todo, ymd, today) {
+function todoStateClass(todo) {
   if (todo.done) return 'text-ink-muted line-through decoration-ink-muted/60';
   if (todo.dueDate && getDaysLeft(todo.dueDate) < 0) return 'text-clay-deep';
   return 'text-ink';
 }
 
+function CalendarTodoItem({ todo }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `todo-${todo.id}`,
+    data: { todo },
+  });
+  return (
+    <li ref={setNodeRef} {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+      <Link
+        to={`/edit/${todo.id}`}
+        onClick={(e) => {
+          if (consumeDragJustEnded()) e.preventDefault();
+        }}
+        className={`block truncate rounded px-1 py-0.5 text-[11px] leading-tight transition hover:bg-surface-muted ${
+          todoStateClass(todo)
+        } ${isDragging ? 'opacity-30' : ''}`}
+        title={todo.title}
+      >
+        {todo.title}
+      </Link>
+    </li>
+  );
+}
+
+function CalendarTodoItemLarge({ todo }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `todo-${todo.id}`,
+    data: { todo },
+  });
+  return (
+    <li ref={setNodeRef} {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+      <Link
+        to={`/edit/${todo.id}`}
+        onClick={(e) => {
+          if (consumeDragJustEnded()) e.preventDefault();
+        }}
+        className={`block truncate rounded px-2 py-1 text-sm leading-snug transition hover:bg-surface-muted ${
+          todoStateClass(todo)
+        } ${isDragging ? 'opacity-30' : ''}`}
+      >
+        {todo.title}
+      </Link>
+    </li>
+  );
+}
+
 function MonthGrid({ cells, today }) {
+  const { active } = useDndContext();
+  const isDragging = active != null;
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="grid grid-cols-7 border-b border-line bg-surface-muted">
         {WEEKDAYS.map((w) => (
-          <div
-            key={w}
-            className="py-2 text-center text-xs font-medium text-ink-muted"
-          >
+          <div key={w} className="py-2 text-center text-xs font-medium text-ink-muted">
             {w}
           </div>
         ))}
       </div>
       <div className="grid grid-cols-7">
         {cells.map((cell, i) => (
-          <DayCell key={cell.ymd ?? `empty-${i}`} cell={cell} today={today} />
+          <DayCell key={cell.ymd ?? `empty-${i}`} cell={cell} today={today} isDragging={isDragging} />
         ))}
       </div>
     </div>
   );
 }
 
-function DayCell({ cell, today }) {
+function DayCell({ cell, today, isDragging }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop:${cell.ymd || 'nodue'}`,
+    data: { dueDate: cell.ymd || '' },
+    disabled: !cell.ymd,
+  });
   if (!cell.ymd) {
     return <div className="min-h-[7.5rem] border-b border-r border-line bg-surface-muted/40" />;
   }
@@ -170,11 +221,18 @@ function DayCell({ cell, today }) {
   const extra = cell.todos.length - visible.length;
   const isToday = cell.isToday;
 
+  const dropClass = isDragging
+    ? isOver
+      ? 'bg-accent-soft/70 ring-2 ring-accent'
+      : 'bg-sage-soft/30'
+    : '';
+
   return (
     <div
-      className={`min-h-[7.5rem] border-b border-r border-line p-1.5 last:border-r-0 sm:p-2 ${
+      ref={setNodeRef}
+      className={`min-h-[7.5rem] border-b border-r border-line p-1.5 transition-colors duration-200 last:border-r-0 sm:p-2 ${
         isToday ? 'bg-sage-soft/70 ring-1 ring-inset ring-sage' : 'bg-surface'
-      }`}
+      } ${dropClass}`}
     >
       <div className="flex items-center justify-between">
         <span
@@ -190,97 +248,92 @@ function DayCell({ cell, today }) {
       </div>
       <ul className="mt-1 space-y-0.5">
         {visible.map((todo) => (
-          <li key={todo.id}>
-            <Link
-              to={`/edit/${todo.id}`}
-              className={`block truncate rounded px-1 py-0.5 text-[11px] leading-tight transition hover:bg-surface-muted ${todoStateClass(
-                todo,
-                cell.ymd,
-                today
-              )}`}
-              title={todo.title}
-            >
-              {todo.title}
-            </Link>
-          </li>
+          <CalendarTodoItem key={todo.id} todo={todo} />
         ))}
-        {extra > 0 && (
-          <li className="px-1 text-[11px] text-ink-muted">他{extra}件</li>
-        )}
+        {extra > 0 && <li className="px-1 text-[11px] text-ink-muted">他{extra}件</li>}
       </ul>
     </div>
   );
 }
 
 function WeekList({ cells, today }) {
+  const { active } = useDndContext();
+  const isDragging = active != null;
   return (
     <ul className="mt-4 space-y-3">
       {cells.map((cell) => (
-        <li
-          key={cell.ymd}
-          className={`rounded-2xl border p-3 ${
-            cell.isToday ? 'border-sage bg-sage-soft/60' : 'border-line bg-surface'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium ${
-                  cell.isToday ? 'bg-sage text-white' : 'text-ink-muted'
-                }`}
-              >
-                {cell.day}
-              </span>
-              <span className="text-xs text-ink-muted">
-                {WEEKDAYS[weekdayOf(cell.ymd)]}曜日
-              </span>
-            </div>
-            {cell.todos.length > 0 && (
-              <span className="text-xs text-ink-muted">{cell.todos.length}件</span>
-            )}
-          </div>
-          {cell.todos.length === 0 ? (
-            <p className="mt-2 text-xs text-ink-muted">予定なし</p>
-          ) : (
-            <ul className="mt-2 space-y-1">
-              {cell.todos.map((todo) => (
-                <li key={todo.id}>
-                  <Link
-                    to={`/edit/${todo.id}`}
-                    className={`block truncate rounded px-2 py-1 text-sm leading-snug transition hover:bg-surface-muted ${todoStateClass(
-                      todo,
-                      cell.ymd,
-                      today
-                    )}`}
-                  >
-                    {todo.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </li>
+        <WeekDayItem key={cell.ymd} cell={cell} today={today} isDragging={isDragging} />
       ))}
     </ul>
   );
 }
 
-function NoDueList({ todos }) {
+function WeekDayItem({ cell, today, isDragging }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop:${cell.ymd || 'nodue'}`,
+    data: { dueDate: cell.ymd || '' },
+  });
+  const dropClass = isDragging
+    ? isOver
+      ? 'ring-2 ring-accent bg-accent-soft/70'
+      : 'bg-sage-soft/30'
+    : '';
+
   return (
-    <section className="mt-8 rounded-2xl border border-line border-dashed bg-surface p-4">
+    <li
+      ref={setNodeRef}
+      className={`rounded-2xl border p-3 transition-colors duration-200 ${
+        cell.isToday ? 'border-sage bg-sage-soft/60' : 'border-line bg-surface'
+      } ${dropClass}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-2">
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium ${
+              cell.isToday ? 'bg-sage text-white' : 'text-ink-muted'
+            }`}
+          >
+            {cell.day}
+          </span>
+          <span className="text-xs text-ink-muted">{WEEKDAYS[weekdayOf(cell.ymd)]}曜日</span>
+        </div>
+        {cell.todos.length > 0 && <span className="text-xs text-ink-muted">{cell.todos.length}件</span>}
+      </div>
+      {cell.todos.length === 0 ? (
+        <p className="mt-2 text-xs text-ink-muted">予定なし</p>
+      ) : (
+        <ul className="mt-2 space-y-1">
+          {cell.todos.map((todo) => (
+            <CalendarTodoItemLarge key={todo.id} todo={todo} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function NoDueList({ todos }) {
+  const { active } = useDndContext();
+  const isDragging = active != null;
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'drop:nodue',
+    data: { dueDate: '' },
+  });
+  const dropClass = isDragging
+    ? isOver
+      ? 'ring-2 ring-accent bg-accent-soft/70'
+      : 'bg-sage-soft/30'
+    : '';
+
+  return (
+    <section
+      ref={setNodeRef}
+      className={`mt-8 rounded-2xl border border-dashed border-line bg-surface p-4 transition-colors duration-200 ${dropClass}`}
+    >
       <h3 className="text-sm font-medium text-ink-muted">期日なし</h3>
       <ul className="mt-2 space-y-1">
         {todos.map((todo) => (
-          <li key={todo.id}>
-            <Link
-              to={`/edit/${todo.id}`}
-              className={`block truncate rounded px-2 py-1 text-sm leading-snug transition hover:bg-surface-muted ${
-                todo.done ? 'text-ink-muted line-through decoration-ink-muted/60' : 'text-ink'
-              }`}
-            >
-              {todo.title}
-            </Link>
-          </li>
+          <CalendarTodoItemLarge key={todo.id} todo={todo} />
         ))}
       </ul>
     </section>
