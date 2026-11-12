@@ -148,15 +148,20 @@ function CalendarTodoItem({ todo }) {
     data: { todo },
   });
   return (
-    <li ref={setNodeRef} {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+    <li
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={`cursor-grab select-none active:cursor-grabbing ${isDragging ? 'opacity-30' : ''}`}
+    >
       <Link
         to={`/edit/${todo.id}`}
         onClick={(e) => {
           if (consumeDragJustEnded()) e.preventDefault();
         }}
-        className={`block truncate rounded px-1 py-0.5 text-[11px] leading-tight transition hover:bg-surface-muted ${
-          todoStateClass(todo)
-        } ${isDragging ? 'opacity-30' : ''}`}
+        className={`block truncate rounded px-1 py-0.5 text-[11px] leading-tight transition hover:bg-surface-muted ${todoStateClass(
+          todo
+        )}`}
         title={todo.title}
       >
         {todo.title}
@@ -171,15 +176,20 @@ function CalendarTodoItemLarge({ todo }) {
     data: { todo },
   });
   return (
-    <li ref={setNodeRef} {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+    <li
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={`cursor-grab select-none active:cursor-grabbing ${isDragging ? 'opacity-30' : ''}`}
+    >
       <Link
         to={`/edit/${todo.id}`}
         onClick={(e) => {
           if (consumeDragJustEnded()) e.preventDefault();
         }}
-        className={`block truncate rounded px-2 py-1 text-sm leading-snug transition hover:bg-surface-muted ${
-          todoStateClass(todo)
-        } ${isDragging ? 'opacity-30' : ''}`}
+        className={`block truncate rounded px-2 py-1 text-sm leading-snug transition hover:bg-surface-muted ${todoStateClass(
+          todo
+        )}`}
       >
         {todo.title}
       </Link>
@@ -191,7 +201,7 @@ function MonthGrid({ cells, today }) {
   const { active } = useDndContext();
   const isDragging = active != null;
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="mt-4 rounded-2xl border border-line bg-surface">
       <div className="grid grid-cols-7 border-b border-line bg-surface-muted">
         {WEEKDAYS.map((w) => (
           <div key={w} className="py-2 text-center text-xs font-medium text-ink-muted">

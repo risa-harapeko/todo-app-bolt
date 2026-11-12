@@ -19,11 +19,12 @@ export default function TodoRow({ todo, urgency, busy, onToggle }) {
     <li
       ref={setNodeRef}
       {...attributes}
-      className={`flex items-center gap-4 rounded-2xl border border-line px-4 py-3.5 transition-all duration-200 sm:px-5 ${
-        isDragging ? 'opacity-30 shadow-lg' : ''
+      {...listeners}
+      className={`flex select-none items-center gap-4 rounded-2xl border border-line px-4 py-3.5 transition-all duration-200 sm:px-5 ${
+        isDragging ? 'opacity-30' : ''
       } ${
         todo.done ? 'bg-surface-muted' : 'bg-surface hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-18px_rgba(47,52,55,0.45)]'
-      }`}
+      } cursor-grab active:cursor-grabbing`}
     >
       <button
         type="button"
@@ -42,31 +43,35 @@ export default function TodoRow({ todo, urgency, busy, onToggle }) {
         {todo.done && <Check size={14} strokeWidth={3} aria-hidden="true" />}
       </button>
 
-      <div {...listeners} className="min-w-0 flex-1 cursor-grab active:cursor-grabbing">
-        <Link
-          to={`/edit/${todo.id}`}
-          onClick={(e) => {
-            if (consumeDragJustEnded()) e.preventDefault();
-          }}
-          className="group"
+      <Link
+        to={`/edit/${todo.id}`}
+        onClick={(e) => {
+          if (consumeDragJustEnded()) e.preventDefault();
+        }}
+        className="group min-w-0 flex-1"
+      >
+        <p
+          className={`text-base leading-snug transition-colors group-hover:text-accent sm:text-lg ${
+            todo.done ? 'text-ink-muted line-through decoration-ink-muted/60' : 'text-ink'
+          }`}
         >
-          <p
-            className={`text-base leading-snug transition-colors group-hover:text-accent sm:text-lg ${
-              todo.done ? 'text-ink-muted line-through decoration-ink-muted/60' : 'text-ink'
-            }`}
-          >
-            {todo.title}
-          </p>
-          {todo.content && <p className="mt-1 text-sm leading-relaxed text-ink-muted">{todo.content}</p>}
-        </Link>
-      </div>
+          {todo.title}
+        </p>
+        {todo.content && <p className="mt-1 text-sm leading-relaxed text-ink-muted">{todo.content}</p>}
+      </Link>
 
       {todo.done ? (
-        <span className="shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-muted">
+        <span
+          onPointerDown={(e) => e.stopPropagation()}
+          className="shrink-0 whitespace-nowrap rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-muted"
+        >
           完了
         </span>
       ) : (
-        <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${badgeTone[urgency.tone]}`}>
+        <span
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${badgeTone[urgency.tone]}`}
+        >
           {urgency.label}
         </span>
       )}
