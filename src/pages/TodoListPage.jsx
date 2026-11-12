@@ -4,7 +4,8 @@ import { List, Calendar } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -27,9 +28,7 @@ const DROP_ANIMATION = {
 const DRAG_THRESHOLD_PX = 8;
 const LONG_PRESS_MS = 250;
 
-function pointerActivationConstraint() {
-  return { delay: LONG_PRESS_MS, tolerance: DRAG_THRESHOLD_PX };
-}
+
 
 export default function TodoListPage() {
   const [todos, setTodos] = useState([]);
@@ -40,8 +39,9 @@ export default function TodoListPage() {
   const [view, setView] = useLocalStorage('tasuku.view', 'list');
   const [activeTodo, setActiveTodo] = useState(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: pointerActivationConstraint() }),
+   const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: DRAG_THRESHOLD_PX } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: LONG_PRESS_MS, tolerance: 5 } }),
     useSensor(KeyboardSensor)
   );
 
